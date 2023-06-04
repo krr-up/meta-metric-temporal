@@ -5,7 +5,7 @@ until(3,a,b) :- initially.
 #show show(a).
 #show show(b).
 
-%% clingo --output=reify examples/until-head.lp | clingo - meta.lp -c horizon=3 0
+%% clingo --output=reify examples/until-head1.lp | clingo - meta.lp -c horizon=3 0
 
 %% Solving...
 %% Answer: 1

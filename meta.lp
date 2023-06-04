@@ -47,13 +47,22 @@ true(O,T) :- time(T), output(O,B), not literal_tuple(B,_).
 formula(O) :- output(O,_).
 
 
+% auxiliary formulas - true always holds, false never does.
+
+true(true,T)  :- formula(true), time(T).
+
+:- formula(false), time(T), true(false,T).
+
+
 % define nullary initially
 true(initially,0) :- formula(initially).
+
 T=0 :- true(initially,T), formula(initially).
 
 
 % define nullary finally.
 true(finally,horizon) :- formula(finally).
+
 T=horizon :- true(finally,T), formula(finally).
 
 
@@ -61,18 +70,32 @@ T=horizon :- true(finally,T), formula(finally).
 formula(F) :- formula(prev(I,F)).
 
 true(F,T-N) : time(T-N) :- formula(prev(N,F)), true(prev(N,F),T), time(T), time(T-N).
-% T-N>=0 :- formula(prev(N,F)), true(prev(N,F),T), time(T).
 
 true(prev(N,F),T) :- true(F,T), formula(prev(N,F)), time(T), time(T-N).
+
+
+% define non-iterated prev - special case of iterated prev
+formula(prev(1,F)) :- formula(prev(F)).
+
+true(prev(1,F),T) :- formula(prev(F)), true(prev(F),T), time(T).
+
+true(prev(F),T) :- formula(prev(F)), true(prev(1,F),T), time(T).
 
 
 % define iterated next
 formula(F) :- formula(next(I,F)).
 
 true(F,T+N) : time(T+N) :- formula(next(N,F)), true(next(N,F),T), time(T).
-% T+N<=horizon :- formula(next(N,F)), true(next(N,F),T), time(T).
 
 true(next(N,F),T) :- formula(next(N,F)), true(F,T+N), time(T), time(T+N).
+
+
+% define non-iterated next - special case of iterated next
+formula(next(1,F)) :- formula(next(F)).
+
+true(next(1,F),T) :- formula(next(F)), true(next(F),T), time(T).
+
+true(next(F),T) :- formula(next(F)), true(next(1,F),T), time(T).
 
 
 % define until
@@ -86,7 +109,15 @@ true(R,T') :- aux_true(until(N,L,R),_,T').
 
 true(until(N,L,R),T) :- formula(until(N,L,R)), aux_true(until(N,L,R),T,_).
 aux_true(until(N,L,R),T,T') :- formula(until(N,L,R)), time(T'), true(R,T'),
-															 time(T), T<=T', T'<T+N, true(L,K) : T<=K, K<T', time(K). 
+															 time(T), T<=T', T'<T+N, true(L,K) : T<=K, K<T', time(K).
+
+
+% define eventually_after
+formula(until(N,true,F))  :- formula(eventually_after(N,F)).
+true(until(N,true,F),T) :- formula(eventually_after(N,F)),
+												 true(eventually_after(N,F),T), time(T).
+true(eventually_after(N,F),T) :- formula(eventually_after(N,F)),
+															 true(until(N,true,F),T), time(T).
 
 
 % define release
@@ -109,7 +140,12 @@ aux_true(release(N,L,R),T,T') :- formula(release(N,L,R)),
 																 true(R,K) : time(K), T<=K, K<=T'.
 
 
-% define eventually_after
+% define always_after
+formula(release(N,false,F))  :- formula(always_after(N,F)).
+true(release(N,false,F),T) :- formula(always_after(N,F)),
+															true(always_after(N,F),T), time(T).
+true(always_after(N,F),T) :- formula(always_after(N,F)),
+														 true(release(N,false,F),T), time(T).
 
 
 % suppress warning messages for missing reified output atoms
